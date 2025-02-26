@@ -2,9 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
      inputs:
        version:
@@ -44,6 +44,6 @@ jobs:
           context: ./
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_NAMESPACE }}/${{ secrets.IMAGE_NAME || env.REPO_NAME }}:${{ steps.get-version-id.outputs.id }}
+          tags: ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_NAMESPACE }}/${{ vars.IMAGE_NAME || env.REPO_NAME }}:${{ steps.get-version-id.outputs.id }}
           cache-from: type=gha
           cache-to: type=gha,mode=max 
