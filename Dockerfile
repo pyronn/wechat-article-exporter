@@ -31,9 +31,8 @@ RUN yarn install --production --frozen-lockfile && yarn cache clean
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/public ./public
 
-# 创建启动脚本
-RUN echo '#!/bin/sh\nexport NITRO_HOST=0.0.0.0\nexport NITRO_PORT=3000\nnode .output/server/index.mjs' > /app/start.sh && \
-    chmod +x /app/start.sh
+ENV NITRO_HOST 0.0.0.0
+ENV NITRO_PORT 3000    
 
 # 暴露端口
 EXPOSE 3000
@@ -41,4 +40,4 @@ EXPOSE 3000
 ENV HOSTNAME "0.0.0.0"
 
 # 启动应用
-CMD ["/app/start.sh"] 
+ENTRYPOINT ["node", ".output/server/index.mjs"]
