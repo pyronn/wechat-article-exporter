@@ -27,10 +27,13 @@ COPY package.json yarn.lock ./
 # 只安装生产环境依赖
 RUN yarn install --production --frozen-lockfile && yarn cache clean
 
-# 从构建阶段复制 Nuxt.js 构建产物和必要文件
-COPY --from=builder /app/.nuxt ./.nuxt
+# 从构建阶段复制 Nuxt.js 构建产物
+COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/nuxt.config.ts ./nuxt.config.ts
+
+# 创建启动脚本
+RUN echo '#!/bin/sh\nexport NITRO_HOST=0.0.0.0\nexport NITRO_PORT=3000\nnode .output/server/index.mjs' > /app/start.sh && \
+    chmod +x /app/start.sh
 
 # 暴露端口
 EXPOSE 3000
@@ -38,4 +41,4 @@ EXPOSE 3000
 ENV HOSTNAME "0.0.0.0"
 
 # 启动应用
-CMD ["yarn", "start"] 
+CMD ["/app/start.sh"] 
