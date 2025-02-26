@@ -1,0 +1,49 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+     inputs:
+       version:
+         description: 'version'
+         required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        id: checkout
+        
+      - name: Get tag or commit id
+        uses: iawia002/get-tag-or-commit-id@v1.0.1
+        id: get-version-id
+        
+      - name: Extract repository name
+        shell: bash
+        run: echo "REPO_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Login to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_NAMESPACE }}/${{ secrets.IMAGE_NAME || env.REPO_NAME }}:${{ steps.get-version-id.outputs.id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max 
