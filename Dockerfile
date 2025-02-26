@@ -27,8 +27,10 @@ COPY package.json yarn.lock ./
 # 只安装生产环境依赖
 RUN yarn install --production --frozen-lockfile && yarn cache clean
 
-# 从构建阶段复制构建产物
-COPY --from=builder /app/dist ./dist
+# 从构建阶段复制 Nuxt.js 构建产物和必要文件
+COPY --from=builder /app/.nuxt ./.nuxt
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/nuxt.config.js ./nuxt.config.js
 
 # 暴露端口
 EXPOSE 3000
