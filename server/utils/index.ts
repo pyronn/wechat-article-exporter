@@ -11,6 +11,35 @@ interface RequestOptions {
     parseJson?: boolean
     withCredentials?: boolean
     headers?: Record<string, string>
+    timeout?: number
+    retries?: number
+}
+
+/**
+ * 睡眠函数
+ */
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 带超时的 fetch
+ */
+async function fetchWithTimeout(url: string, options: RequestInit, timeout = 10000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        throw error;
+    }
 }
 
 export async function proxyMpRequest(options: RequestOptions) {
@@ -28,7 +57,7 @@ export async function proxyMpRequest(options: RequestOptions) {
     const headers: Record<string, string> = {
         Referer: 'https://mp.weixin.qq.com/',
         Origin: 'https://mp.weixin.qq.com',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
     };
     
     // 只有在需要时添加 Cookie 头
@@ -44,6 +73,9 @@ export async function proxyMpRequest(options: RequestOptions) {
     const fetchInit: RequestInit = {
         method: options.method,
         headers,
+        // 添加缓存控制
+        cache: 'no-cache',
+        credentials: 'omit'
     }
 
     let finalUrl = options.endpoint;
@@ -60,28 +92,56 @@ export async function proxyMpRequest(options: RequestOptions) {
 
     console.log('proxyMpRequest - Sending request with headers:', headers);
     
-    try {
-        const response = await fetch(finalUrl, fetchInit);
-        console.log('proxyMpRequest - Response received:', {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers.entries()]),
-        });
-        
-        if (!options.parseJson) {
-            // 对于二进制数据，确保响应是有效的
-            console.log('proxyMpRequest - Returning raw response for binary data');
-            return response;
-        } else {
-            // 解析 JSON 响应
-            console.log('proxyMpRequest - Parsing JSON response');
-            return await response.json();
+    const maxRetries = options.retries || 3;
+    const timeout = options.timeout || 10000;
+    
+    let lastError: Error | null = null;
+    
+    // 添加重试逻辑
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`proxyMpRequest - Attempt ${attempt}/${maxRetries}...`);
+            
+            // 使用带超时的 fetch
+            const response = await fetchWithTimeout(finalUrl, fetchInit, timeout);
+            
+            console.log('proxyMpRequest - Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries([...response.headers.entries()]),
+            });
+            
+            // 如果是 503 或其他临时错误，可能需要重试
+            if (response.status >= 500 && response.status < 600 && attempt < maxRetries) {
+                console.log(`proxyMpRequest - Received status ${response.status}, will retry...`);
+                await sleep(1000 * attempt); // 指数退避
+                continue;
+            }
+            
+            if (!options.parseJson) {
+                // 对于二进制数据，确保响应是有效的
+                console.log('proxyMpRequest - Returning raw response for binary data');
+                return response;
+            } else {
+                // 解析 JSON 响应
+                console.log('proxyMpRequest - Parsing JSON response');
+                return await response.json();
+            }
+        } catch (error: any) {
+            lastError = error;
+            console.error(`proxyMpRequest - Fetch error on attempt ${attempt}:`, error);
+            
+            if (attempt < maxRetries) {
+                const delay = 1000 * attempt;
+                console.log(`proxyMpRequest - Retrying in ${delay}ms...`);
+                await sleep(delay);
+            }
         }
-    } catch (error: any) {
-        console.error('proxyMpRequest - Fetch error:', error);
-        console.error('proxyMpRequest - Error message:', error instanceof Error ? error.message : String(error));
-        throw error; // 重新抛出错误以便上层处理
     }
+    
+    // 所有重试都失败了
+    console.error('proxyMpRequest - All retry attempts failed');
+    throw lastError || new Error('All retry attempts failed');
 }
 
 export function formatTraffic(bytes: number) {
