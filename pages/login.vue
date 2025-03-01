@@ -158,6 +158,7 @@ async function getQrcode() {
       await refreshQrcode()
     }
   } catch (e) {
+    console.log(e)
     scanLoginType.value = 6
   }
 }

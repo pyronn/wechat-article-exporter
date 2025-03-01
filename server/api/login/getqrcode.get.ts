@@ -9,5 +9,6 @@ export default defineEventHandler(async (event) => {
             action: 'getqrcode',
             random: new Date().getTime(),
         },
+        parseJson: false, // Explicitly set parseJson to false for binary data
     })
 })

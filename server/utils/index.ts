@@ -37,11 +37,13 @@ export async function proxyMpRequest(options: RequestOptions) {
         fetchInit.body = new URLSearchParams(options.body as Record<string, string>).toString()
     }
 
-    const response = fetch(options.endpoint, fetchInit)
+    const response = await fetch(options.endpoint, fetchInit)
+    
     if (!options.parseJson) {
+        // For binary responses like images, we need to return the actual response
         return response
     } else {
-        return response.then(resp => resp.json())
+        return await response.json()
     }
 }
 
