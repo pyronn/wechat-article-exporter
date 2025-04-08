@@ -15,6 +15,13 @@ export interface UserEntry {
  * @param user
  */
 export async function createUser(user: UserEntry): Promise<boolean> {
+    // 由于本地kv依赖存在问题，所以本地启动的服务跳过相关代码
+    // https://github.com/denoland/denokv/issues/45
+    // https://github.com/wechat-article/wechat-article-exporter/issues/12
+    if (process.dev) {
+        return Promise.resolve(true)
+    }
+
     const primaryKey = ["users", user.originalID]
 
     // 注意: fakeid 可能是空
@@ -57,6 +64,13 @@ export async function getUserByFakeID(fakeid: string): Promise<UserEntry | null>
 }
 
 export async function getUser(originalID: string): Promise<UserEntry | null> {
+    // 由于本地kv依赖存在问题，所以本地启动的服务跳过相关代码
+    // https://github.com/denoland/denokv/issues/45
+    // https://github.com/wechat-article/wechat-article-exporter/issues/12
+    if (process.dev) {
+        return null
+    }
+
     const kv = await useKv()
     const {value: user} = await kv.get(["users", originalID])
     return user

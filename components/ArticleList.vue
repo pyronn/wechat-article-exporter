@@ -1,22 +1,24 @@
 <template>
   <div class="relative pb-24 pt-2 bg-zinc-200">
-    <ul class="flex justify-between container mx-auto flex-wrap">
-      <ArticleItem
-          v-for="(article, index) in articleList.filter(article => hideDeleted ? !article.is_deleted : true)"
-          :key="article.aid"
-          :index="index + 1"
-          :title="article.title"
-          :cover="article.pic_cdn_url_235_1 || article.pic_cdn_url_16_9 || article.cover_img || article.cover"
-          :cover-theme="article.cover_img_theme_color"
-          :digest="article.digest"
-          :is-deleted="article.is_deleted"
-          :link="article.link"
-          :updatedAt="article.update_time"
-          :is-original="article.copyright_stat === 1 && article.copyright_type === 1"
-          :album-infos="article.appmsg_album_infos"
-          :item-show-type="article.item_show_type"
-      />
-    </ul>
+    <div class="container mx-auto">
+      <ul class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <ArticleItem
+            v-for="(article, index) in articleList.filter(article => hideDeleted ? !article.is_deleted : true)"
+            :key="article.aid"
+            :index="index + 1"
+            :title="article.title"
+            :cover="article.pic_cdn_url_235_1 || article.pic_cdn_url_16_9 || article.cover_img || article.cover"
+            :cover-theme="article.cover_img_theme_color"
+            :digest="article.digest"
+            :is-deleted="article.is_deleted"
+            :link="article.link"
+            :updatedAt="article.update_time"
+            :is-original="article.copyright_stat === 1 && article.copyright_type === 1"
+            :album-infos="article.appmsg_album_infos"
+            :item-show-type="article.item_show_type"
+        />
+      </ul>
+    </div>
     <div v-element-visibility="onElementVisibility"></div>
     <p v-if="loading" class="flex justify-center items-center mt-2 py-2">
       <Loader :size="28" class="animate-spin text-slate-500"/>

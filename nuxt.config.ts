@@ -8,5 +8,15 @@ export default defineNuxtConfig({
     public: {
       umamiWebsiteID: '',
     }
-  }
+  },
+  app: {
+    head: {
+      meta: [
+        {
+          name: 'referrer',
+          content: 'no-referrer',
+        },
+      ],
+    },
+  },
 })
